@@ -1,6 +1,6 @@
 {
   "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
-  "name": "wouldyoured",
+  "name": "wouldyoured1",
   "post": {
     "dir": "dist/client",
     "entrypoints": {
@@ -31,6 +31,6 @@
     "onAppInstall": "/internal/on-app-install"
   },
   "dev": {
-    "subreddit": "wouldyoured_dev"
+    "subreddit": "wouldyoured1_dev"
   }
 }
