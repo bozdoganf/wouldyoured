@@ -87,8 +87,12 @@ def get_random_post_with_poll(subreddit_name, max_rank=1000, max_attempts=50):
                             poll_options.append(option_data)
                             total_votes += option.vote_count
                         
-                        # Calculate percentages
-                        for option in poll_options:
+                        # Sort options by vote count (highest first) and take only top 2
+                        sorted_options = sorted(poll_options, key=lambda x: x['vote_count'], reverse=True)
+                        top_2_options = sorted_options[:2]
+                        
+                        # Calculate percentages for top 2 options
+                        for option in top_2_options:
                             if total_votes > 0:
                                 option['percentage'] = (option['vote_count'] / total_votes) * 100
                             else:
@@ -96,24 +100,21 @@ def get_random_post_with_poll(subreddit_name, max_rank=1000, max_attempts=50):
                         
                         poll_data = {
                             'total_votes': total_votes,
-                            'options': poll_options
+                            'option_A': top_2_options[0]['text'] if len(top_2_options) > 0 else '',
+                            'option_A_count': top_2_options[0]['vote_count'] if len(top_2_options) > 0 else 0,
+                            'option_A_percentage': top_2_options[0]['percentage'] if len(top_2_options) > 0 else 0,
+                            'option_B': top_2_options[1]['text'] if len(top_2_options) > 1 else '',
+                            'option_B_count': top_2_options[1]['vote_count'] if len(top_2_options) > 1 else 0,
+                            'option_B_percentage': top_2_options[1]['percentage'] if len(top_2_options) > 1 else 0,
+                            'all_options': top_2_options  # Keep for display purposes
                         }
                         
                         post_data = {
-                            'title': post.title,
-                            'author': str(post.author) if post.author else '[deleted]',
-                            'score': post.score,
-                            'upvote_ratio': post.upvote_ratio,
-                            'num_comments': post.num_comments,
-                            'created_utc': datetime.fromtimestamp(post.created_utc).strftime('%Y-%m-%d %H:%M:%S'),
-                            'url': f"https://reddit.com{post.permalink}",
-                            'selftext': post.selftext[:200] + '...' if len(post.selftext) > 200 else post.selftext,
-                            'is_self': post.is_self,
-                            'link_url': post.url if not post.is_self else None,
-                            'has_poll': True,
-                            'poll_data': poll_data,
-                            'rank': random_rank,
-                            'attempts': attempts
+                            'question': post.title,
+                            'option_A': poll_data['option_A'],
+                            'option_A_count': poll_data['option_A_count'],
+                            'option_B': poll_data['option_B'],
+                            'option_B_count': poll_data['option_B_count']
                         }
                         return post_data
                     else:
@@ -143,32 +144,9 @@ def display_post(post):
     print(f"Fetched at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"{'='*80}\n")
     
-    print(f"Rank: #{post['rank']}")
-    print(f"Search Attempts: {post['attempts']}")
-    print(f"Title: {post['title']}")
-    print(f"Author: u/{post['author']}")
-    print(f"Score: {post['score']} (↑{post['upvote_ratio']:.1%})")
-    print(f"Comments: {post['num_comments']}")
-    print(f"Posted: {post['created_utc']}")
-    print(f"URL: {post['url']}")
-    
-    if post['selftext']:
-        print(f"Text: {post['selftext']}")
-    
-    if post['link_url']:
-        print(f"Link: {post['link_url']}")
-    
-    # Display poll statistics (guaranteed to exist)
-    print(f"\n📊 POLL RESULTS:")
-    print(f"Total Votes: {post['poll_data']['total_votes']}")
-    
-    # Sort options by vote count (highest first)
-    sorted_options = sorted(post['poll_data']['options'], 
-                          key=lambda x: x['vote_count'], reverse=True)
-    
-    for j, option in enumerate(sorted_options, 1):
-        print(f"{j}. {option['text']}")
-        print(f"   Votes: {option['vote_count']} ({option['percentage']:.1f}%)")
+    print(f"Question: {post['question']}")
+    print(f"Option A: {post['option_A']} ({post['option_A_count']} votes)")
+    print(f"Option B: {post['option_B']} ({post['option_B_count']} votes)")
     
     print("-" * 80)
 
@@ -207,8 +185,8 @@ def main():
         
         # Save to JSON
         save_to_json(post)
+        print("Successfully found post with poll")
         
-        print(f"\nSuccessfully found post with poll at rank #{post['rank']} after {post['attempts']} attempts!")
     else:
         print("Failed to find a post with a poll. This could be due to:")
         print("1. Reddit API credentials issues")
